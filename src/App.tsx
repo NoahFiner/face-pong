@@ -6,8 +6,10 @@ function App() {
   console.log("working");
   return (
     <div className="App">
-      <header className="App-header">
+      <div className="background">
         <Video></Video>
+      </div>
+      <header className="App-header">
       </header>
     </div>
   );

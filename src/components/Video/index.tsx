@@ -6,6 +6,8 @@ import './Video.scss'
 import * as faceapi from 'face-api.js';
 import { Point } from 'face-api.js';
 
+import CoordsConversion from '../../utils/coordConversion';
+
 // configure face API
 faceapi.env.monkeyPatch({
   Canvas: HTMLCanvasElement,
@@ -16,12 +18,33 @@ faceapi.env.monkeyPatch({
   createImageElement: () => document.createElement('img')
 });
 
+//TODO: figure out how to make these global types
 interface Coords {
   x: number,
   y: number,
 }
 
-class Video extends Component<{}, {videoSrc: any, loaded: boolean, coords: Coords, interval: number}> {
+interface Dimensions {
+  width: number,
+  height: number,
+}
+
+interface State {
+  videoSrc: any,
+  loadedVideo: boolean,
+  coords: Coords,
+  offsetDims: Dimensions,
+  videoDims: Dimensions,
+  interval: number,
+}
+
+// const getUserMedia = (params) => (
+//   new Promise((success, error) => {
+    
+//   })
+// )
+
+class Video extends Component<{}, State> {
   private videoRef: React.RefObject<HTMLVideoElement>;
 
     constructor(props: {}) {
@@ -29,11 +52,12 @@ class Video extends Component<{}, {videoSrc: any, loaded: boolean, coords: Coord
       this.videoRef = React.createRef();
       this.state = {
         videoSrc: null,
-        loaded: false,
+        loadedVideo: false,
         coords: {x: 0, y: 0},
+        offsetDims: {height: 0, width: 0},
+        videoDims: {height: 0, width: 0},
         interval: 0,
       }
-      this.handleVideo = this.handleVideo.bind(this);
     }
 
     async loadModels() {
@@ -41,12 +65,52 @@ class Video extends Component<{}, {videoSrc: any, loaded: boolean, coords: Coord
       await faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models')
     }
 
-    async componentDidMount() {
-      navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
- 
-      if (navigator.getUserMedia) {       
-        navigator.getUserMedia({video: true}, this.handleVideo, this.videoError);
+    onVideoLoad() {
+      if(this.videoRef.current) {
+        this.setState({loadedVideo: true});
+        this.setState({offsetDims: {
+          height: this.videoRef.current.offsetHeight,
+          width: this.videoRef.current.offsetWidth,
+        }, videoDims: {
+          height: this.videoRef.current.videoHeight,
+          width: this.videoRef.current.videoWidth,
+        }
+        });
       }
+    }
+
+    async getMedia(constraints: any) {
+      let stream = null;
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        if (this.videoRef.current) {
+          this.videoRef.current.srcObject = stream;
+          this.videoRef.current.play();
+
+          this.videoRef.current.onloadedmetadata = async (event) => {
+            try {
+              if(this.videoRef.current) {
+                await this.videoRef.current.play();
+                this.onVideoLoad();
+              }
+            } catch (e) {
+              console.error(e)
+            }
+          }
+
+        } else {
+          throw new Error("video not found");
+        }
+
+      } catch(e) {
+        alert("webcam couldn't connect" + JSON.stringify(e));
+      }
+    }
+
+    async componentDidMount() {
+      this.getMedia({video: true});
 
       await this.loadModels();
       this.setState({interval: window.setInterval(async () => {
@@ -54,32 +118,26 @@ class Video extends Component<{}, {videoSrc: any, loaded: boolean, coords: Coord
 
         if(result && result.detection.box) {
           const nose: Array<Point> = result.landmarks.getNose()
-          this.setState({coords: {x: nose[4].x, y: nose[4].y}})
+          this.setState({coords: CoordsConversion.normalize({x: nose[4].x, y: nose[4].y}, this.state.videoDims)});
         }
-      }, 50)
+      }, 30)
       });
-    }
-    
-    handleVideo(stream: any) {
-      // Update the state, triggering the component to re-render with the correct stream
-      if (this.videoRef.current !== null) {
-        this.videoRef.current.srcObject = stream;
-      }
-    }
-  
-    videoError() {
-  
     }
 
   render() {
+    let updatedCoords = CoordsConversion.project(this.state.coords, {height: window.innerHeight, width: window.innerWidth/2});
+    
       return (
         <>
-          <p>coords: {(this.state.coords.x)}, {(this.state.coords.y)}</p>
           <div className="video-outer">
             <div className="dot" style={{transform:
-              "translate("+(this.state.coords.x)+"px, "+(this.state.coords.y)+"px)"
+              "translate("+(updatedCoords.x)+"px, "+(updatedCoords.y)+"px)"
               }}></div>
             <video ref={this.videoRef} id="video" src={this.state.videoSrc} autoPlay playsInline></video>
+          </div>
+          <div className="test-info">
+            <p>loaded video: {this.state.loadedVideo ? "true" : "false"}</p>
+            <p>coords: {(updatedCoords.x)}, {(updatedCoords.y)}</p>
           </div>
         </>
       )

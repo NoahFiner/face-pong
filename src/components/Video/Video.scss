@@ -1,17 +1,30 @@
 .video-outer {
-    position: relative;
+    position: absolute;
+
+    /*mirror the screen*/
+    transform: scale(-1, 1);
 
     video {
-        object-fit: contain;
+        object-fit: fill;
+        /*TODO: we need to figure out how to make cover work*/
+        height: 100vh;
+        width: 50vw;
     }
 
     .dot {
-        top: -50px;
-        left: 0;
+        top: -100px;
+        left: 0px;
         position: absolute;
-        height: 100px;
-        width: 20px;
+        height: 200px;
+        width: 30px;
         background-color: #fff;
-        transition: transform 0.05s linear;
+        transition: transform 0.03s linear;
     }
+}
+
+.test-info {
+    background-color: #000;
+    color: #fff;
+    opacity: 0.75;
+    z-index: 100;
 }
