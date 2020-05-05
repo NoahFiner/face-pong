@@ -65,17 +65,21 @@ class Video extends Component<{}, State> {
       await faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models')
     }
 
-    onVideoLoad() {
+    updateOffsetDims() {
       if(this.videoRef.current) {
-        this.setState({loadedVideo: true});
         this.setState({offsetDims: {
           height: this.videoRef.current.offsetHeight,
           width: this.videoRef.current.offsetWidth,
-        }, videoDims: {
+        }});
+      }
+    }
+
+    updateVideoDims() {
+      if(this.videoRef.current) {
+        this.setState({loadedVideo: true, videoDims: {
           height: this.videoRef.current.videoHeight,
           width: this.videoRef.current.videoWidth,
-        }
-        });
+        }});
       }
     }
 
@@ -93,7 +97,8 @@ class Video extends Component<{}, State> {
             try {
               if(this.videoRef.current) {
                 await this.videoRef.current.play();
-                this.onVideoLoad();
+                this.updateVideoDims();
+                this.updateOffsetDims();
               }
             } catch (e) {
               console.error(e)
@@ -112,6 +117,8 @@ class Video extends Component<{}, State> {
     async componentDidMount() {
       this.getMedia({video: true});
 
+      window.addEventListener("resize", this.updateOffsetDims.bind(this));
+
       await this.loadModels();
       this.setState({interval: window.setInterval(async () => {
         let result = await faceapi.detectSingleFace(this.videoRef.current as any, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true)
@@ -125,7 +132,9 @@ class Video extends Component<{}, State> {
     }
 
   render() {
-    let updatedCoords = CoordsConversion.project(this.state.coords, {height: window.innerHeight, width: window.innerWidth/2});
+    let updatedCoords = CoordsConversion.projectCover(this.state.coords,
+                                                      this.state.videoDims,
+                                                      this.state.offsetDims);
     
       return (
         <>

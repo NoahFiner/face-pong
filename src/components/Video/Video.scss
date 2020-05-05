@@ -5,10 +5,9 @@
     transform: scale(-1, 1);
 
     video {
-        object-fit: fill;
-        /*TODO: we need to figure out how to make cover work*/
+        object-fit: cover;
         height: 100vh;
-        width: 50vw;
+        width: 30vw;
     }
 
     .dot {
