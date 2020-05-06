@@ -115,9 +115,8 @@ class Video extends Component<Props, State> {
 
         if(result && result.detection.box) {
           const nose: Array<Point> = result.landmarks.getNose()
-          this.setState({coords: CoordsConversion.normalize({x: nose[6].x, y: nose[6].y}, this.state.videoDims)});
-          let updatedCoords = CoordsConversion.projectCover(this.state.coords,
-            this.state.videoDims,
+          this.setState({coords: CoordsConversion.normalizeCover({x: nose[6].x, y: nose[6].y}, this.state.videoDims, this.state.offsetDims)});
+          let updatedCoords = CoordsConversion.projectFill(this.state.coords,
             this.state.offsetDims);
           this.props.updateCoords(updatedCoords);
         }
@@ -135,7 +134,7 @@ class Video extends Component<Props, State> {
           <div className="test-info">
             <p>loaded video: {this.state.loadedVideo ? "true" : "false"}</p>
             <p>loaded models: {this.state.loadedModels ? "true" : "false"}</p>
-            {/* <p>coords: {(updatedCoords.x)}, {(updatedCoords.y)}</p> */}
+            <p>coords: {(this.state.coords.x)}, {(this.state.coords.y)}</p>
           </div>
         </>
       )

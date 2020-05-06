@@ -46,7 +46,7 @@ class CanvasOverlay extends Component<Props, State> {
       if(context) {
         context.clearRect(0, 0, this.state.dims.width, this.state.dims.height);
         context.fillStyle = "#ffffff";
-        context.fillRect(this.props.hostCoords.x, this.props.hostCoords.y, 30, 200);
+        context.fillRect(this.props.hostCoords.x, this.props.hostCoords.y, 30, 30);
         context.beginPath();
         context.arc(this.props.ballCoords.x, this.props.ballCoords.y, 30, 0, Math.PI*2);
         context.fill();
