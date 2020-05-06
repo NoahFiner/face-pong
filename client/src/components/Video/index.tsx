@@ -6,7 +6,8 @@ import './Video.scss'
 import * as faceapi from 'face-api.js';
 import { Point } from 'face-api.js';
 
-import CoordsConversion from '../../utils/coordConversion';
+import CoordsConversion from '../../utils/coordsConversion';
+import {Coords, Dimensions} from '../../utils/types';
 
 // configure face API
 faceapi.env.monkeyPatch({
@@ -18,41 +19,30 @@ faceapi.env.monkeyPatch({
   createImageElement: () => document.createElement('img')
 });
 
-//TODO: figure out how to make these global types
-interface Coords {
-  x: number,
-  y: number,
-}
-
-interface Dimensions {
-  width: number,
-  height: number,
-}
-
 interface State {
   videoSrc: any,
   loadedVideo: boolean,
+  loadedModels: boolean,
   coords: Coords,
   offsetDims: Dimensions,
   videoDims: Dimensions,
   interval: number,
 }
 
-// const getUserMedia = (params) => (
-//   new Promise((success, error) => {
-    
-//   })
-// )
+interface Props {
+  updateCoords(coords: Coords): void
+}
 
-class Video extends Component<{}, State> {
+class Video extends Component<Props, State> {
   private videoRef: React.RefObject<HTMLVideoElement>;
 
-    constructor(props: {}) {
+    constructor(props: Props) {
       super(props);
       this.videoRef = React.createRef();
       this.state = {
         videoSrc: null,
         loadedVideo: false,
+        loadedModels: false,
         coords: {x: 0, y: 0},
         offsetDims: {height: 0, width: 0},
         videoDims: {height: 0, width: 0},
@@ -93,7 +83,7 @@ class Video extends Component<{}, State> {
           this.videoRef.current.srcObject = stream;
           this.videoRef.current.play();
 
-          this.videoRef.current.onloadedmetadata = async (event) => {
+          this.videoRef.current.onloadedmetadata = async () => {
             try {
               if(this.videoRef.current) {
                 await this.videoRef.current.play();
@@ -120,33 +110,32 @@ class Video extends Component<{}, State> {
       window.addEventListener("resize", this.updateOffsetDims.bind(this));
 
       await this.loadModels();
-      this.setState({interval: window.setInterval(async () => {
+      this.setState({loadedModels: true, interval: window.setInterval(async () => {
         let result = await faceapi.detectSingleFace(this.videoRef.current as any, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true)
 
         if(result && result.detection.box) {
           const nose: Array<Point> = result.landmarks.getNose()
-          this.setState({coords: CoordsConversion.normalize({x: nose[4].x, y: nose[4].y}, this.state.videoDims)});
+          this.setState({coords: CoordsConversion.normalize({x: nose[6].x, y: nose[6].y}, this.state.videoDims)});
+          let updatedCoords = CoordsConversion.projectCover(this.state.coords,
+            this.state.videoDims,
+            this.state.offsetDims);
+          this.props.updateCoords(updatedCoords);
         }
       }, 30)
       });
     }
 
   render() {
-    let updatedCoords = CoordsConversion.projectCover(this.state.coords,
-                                                      this.state.videoDims,
-                                                      this.state.offsetDims);
     
       return (
         <>
           <div className="video-outer">
-            <div className="dot" style={{transform:
-              "translate("+(updatedCoords.x)+"px, "+(updatedCoords.y)+"px)"
-              }}></div>
             <video ref={this.videoRef} id="video" src={this.state.videoSrc} autoPlay playsInline></video>
           </div>
           <div className="test-info">
             <p>loaded video: {this.state.loadedVideo ? "true" : "false"}</p>
-            <p>coords: {(updatedCoords.x)}, {(updatedCoords.y)}</p>
+            <p>loaded models: {this.state.loadedModels ? "true" : "false"}</p>
+            {/* <p>coords: {(updatedCoords.x)}, {(updatedCoords.y)}</p> */}
           </div>
         </>
       )

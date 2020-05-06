@@ -1,16 +1,11 @@
 import React from 'react';
 import './App.css';
-import Video from './components/Video'
+import Game from './components/Game';
 
 function App() {
-  console.log("working");
   return (
     <div className="App">
-      <div className="background">
-        <Video></Video>
-      </div>
-      <header className="App-header">
-      </header>
+      <Game></Game>
     </div>
   );
 }

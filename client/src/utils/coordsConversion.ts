@@ -1,16 +1,10 @@
-interface Coords {
-    x: number,
-    y: number,
-}
-
-interface Dimensions {
-    height: number,
-    width: number,
-}
+import {Coords, Dimensions} from './types';
 
 const ratio = function(coords: Dimensions) : number {
     return coords.width/coords.height;
 }
+
+const PADDLE_DIMS : Dimensions = {width: 30, height: 200};
 
 // we will be normalizing coords 
 export default class CoordsConversion {
@@ -56,5 +50,12 @@ export default class CoordsConversion {
             result.x = origX*(coverDims.height/contentDims.height) + cutOffSpace;
         }
         return result;
+    }
+
+    static centerCoords(coords:Coords) : Coords {
+        return {
+            x: coords.x - PADDLE_DIMS.width/2,
+            y: coords.y - PADDLE_DIMS.height/2,
+        }
     }
 }
