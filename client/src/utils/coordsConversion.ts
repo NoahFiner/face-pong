@@ -1,5 +1,4 @@
 import {Coords, Dimensions} from './types';
-import { resizeResults } from 'face-api.js';
 
 const ratio = function(coords: Dimensions) : number {
     return coords.width/coords.height;
