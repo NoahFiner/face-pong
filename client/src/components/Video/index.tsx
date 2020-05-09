@@ -24,13 +24,13 @@ interface State {
   loadedVideo: boolean,
   loadedModels: boolean,
   coords: Coords,
-  offsetDims: Dimensions,
   videoDims: Dimensions,
   interval: number,
 }
 
 interface Props {
   updateCoords(coords: Coords): void
+  dims: Dimensions,
 }
 
 class Video extends Component<Props, State> {
@@ -44,7 +44,6 @@ class Video extends Component<Props, State> {
         loadedVideo: false,
         loadedModels: false,
         coords: {x: 0, y: 0},
-        offsetDims: {height: 0, width: 0},
         videoDims: {height: 0, width: 0},
         interval: 0,
       }
@@ -53,15 +52,6 @@ class Video extends Component<Props, State> {
     async loadModels() {
       await faceapi.nets.tinyFaceDetector.loadFromUri('/models')
       await faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models')
-    }
-
-    updateOffsetDims() {
-      if(this.videoRef.current) {
-        this.setState({offsetDims: {
-          height: this.videoRef.current.offsetHeight,
-          width: this.videoRef.current.offsetWidth,
-        }});
-      }
     }
 
     updateVideoDims() {
@@ -88,7 +78,6 @@ class Video extends Component<Props, State> {
               if(this.videoRef.current) {
                 await this.videoRef.current.play();
                 this.updateVideoDims();
-                this.updateOffsetDims();
               }
             } catch (e) {
               console.error(e)
@@ -107,15 +96,13 @@ class Video extends Component<Props, State> {
     async componentDidMount() {
       this.getMedia({video: true});
 
-      window.addEventListener("resize", this.updateOffsetDims.bind(this));
-
       await this.loadModels();
       this.setState({loadedModels: true, interval: window.setInterval(async () => {
         let result = await faceapi.detectSingleFace(this.videoRef.current as any, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true)
 
         if(result && result.detection.box) {
           const nose: Array<Point> = result.landmarks.getNose()
-          this.setState({coords: CoordsConversion.normalizeCover({x: nose[6].x, y: nose[6].y}, this.state.videoDims, this.state.offsetDims)});
+          this.setState({coords: CoordsConversion.normalizeCover({x: nose[6].x, y: nose[6].y}, this.state.videoDims, this.props.dims)});
           this.props.updateCoords(this.state.coords);
         }
       }, 30)
@@ -127,7 +114,7 @@ class Video extends Component<Props, State> {
       return (
         <>
           <div className="video-outer">
-            <video ref={this.videoRef} id="video" src={this.state.videoSrc} autoPlay playsInline></video>
+            <video ref={this.videoRef} style={{height: this.props.dims.height+'px', width: this.props.dims.width+'px'}} id="video" src={this.state.videoSrc} autoPlay playsInline></video>
           </div>
           <div className="test-info">
             <p>loaded video: {this.state.loadedVideo ? "true" : "false"}</p>

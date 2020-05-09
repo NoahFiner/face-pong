@@ -4,14 +4,12 @@ const ratio = function(coords: Dimensions) : number {
     return coords.width/coords.height;
 }
 
-const PADDLE_DIMS : Dimensions = {width: 30, height: 30};
-
 // we will be normalizing coords 
 export default class CoordsConversion {
-    // convert from coords in a box to 1000px x 1000px normalized grid, assuming a normalized fill
+    // convert from coords in a box to 1500px x 1000px normalized grid, assuming a normalized fill
     static normalizeFill(coords: Coords, dims: Dimensions) : Coords {
         return {
-            x: coords.x/dims.width*1000,
+            x: coords.x/dims.width*1500,
             y: coords.y/dims.height*1000,
         }
     }
@@ -20,13 +18,12 @@ export default class CoordsConversion {
     static normalizeCover(coords: Coords, contentDims: Dimensions, coverDims: Dimensions) : Coords {
         let result = {x: 0, y: 0};
         // if the top/bottom of the content is cut off with the cover
-        console.log(contentDims, coverDims);
         if(ratio(coverDims) > ratio(contentDims)) {
             // calculate the scaling factor (which will involve the width)
             const contentToCoverScaling = (coverDims.width/contentDims.width);
 
             // scale the x in content units to normal units
-            result.x = (coords.x*contentToCoverScaling)/coverDims.width*1000;
+            result.x = (coords.x*contentToCoverScaling)/coverDims.width*1500;
 
             // scale the y in content units to cover units
             result.y = coords.y*contentToCoverScaling;
@@ -54,11 +51,11 @@ export default class CoordsConversion {
             result.x += cutOffSpace;
 
             // convert x to normal units
-            result.x = result.x/coverDims.width*1000;
+            result.x = result.x/coverDims.width*1500;
         }
 
         if(result.x < 0) result.x = 0;
-        if(result.x > 1000) result.x = 1000;
+        if(result.x > 1500) result.x = 1500;
         if(result.y < 0) result.y = 0;
         if(result.y > 1000) result.y = 1000;
         return result;
@@ -67,20 +64,25 @@ export default class CoordsConversion {
     // project normalized coords into a new dimension, assuming a valid fill
     static projectFill(coords: Coords, dims: Dimensions) : Coords {
         return {
-            x: (coords.x/1000)*dims.width,
+            x: (coords.x/1500)*dims.width,
             y: (coords.y/1000)*dims.height,
         }
+    }
+
+    static projectFillDims(dimsItem: Dimensions, dims: Dimensions) : Dimensions {
+        let coordsItem = {x: dimsItem.width, y: dimsItem.height}
+        let projected = this.projectFill(coordsItem, dims);
+        return {width: projected.x, height: projected.y};
     }
 
     // project a normalized fill to a cover
     // (content would represent the original video, cover would represent the canvas goal dimensions)
     static projectCover(coords: Coords, contentDims: Dimensions, coverDims: Dimensions) : Coords {
         let result = {x: 0, y: 0};
-        console.log(contentDims, coverDims);
         // if the top/bottom of the content is cut off with the cover
         if(ratio(coverDims) > ratio(contentDims)) {
             // scale the x by width (just like the project function)
-            result.x = (coords.x/1000)*coverDims.width;
+            result.x = (coords.x/1500)*coverDims.width;
 
             // convert the normalized y back to video coords
             const origY = (coords.y/1000)*contentDims.height;
@@ -93,7 +95,7 @@ export default class CoordsConversion {
             result.y = (coords.y/1000)*coverDims.height;
 
             // convert the normalized x back to video coords
-            const origX = (coords.x/1000)*contentDims.width;
+            const origX = (coords.x/1500)*contentDims.width;
             // get the trimmed off left space in terms of the cover coords
             const cutOffSpace = (coverDims.width - contentDims.width*(coverDims.height/contentDims.height))/2
             // scale the original video x by the height ratio
@@ -102,10 +104,10 @@ export default class CoordsConversion {
         return result;
     }
 
-    static centerCoords(coords:Coords) : Coords {
+    static uncenterCoords(coords:Coords, dims:Dimensions) : Coords {
         return {
-            x: coords.x - PADDLE_DIMS.width/2,
-            y: coords.y - PADDLE_DIMS.height/2,
+            x: coords.x - dims.width/2,
+            y: coords.y - dims.height/2,
         }
     }
 }

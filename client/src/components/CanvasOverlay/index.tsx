@@ -4,6 +4,7 @@ import React, {Component} from 'react';
 import './CanvasOverlay.scss'
 
 import {Coords, Dimensions} from '../../utils/types';
+import {PADDLE_DIMS, BALL_RADIUS} from '../../utils/constants';
 
 import CoordsConversion from '../../utils/coordsConversion';
 
@@ -12,32 +13,15 @@ import CoordsConversion from '../../utils/coordsConversion';
 interface Props {
   hostCoords: Coords,
   ballCoords: Coords,
-}
-
-interface State {
   dims: Dimensions,
 }
 
-class CanvasOverlay extends Component<Props, State> {
+class CanvasOverlay extends Component<Props> {
   private canvas = React.createRef<HTMLCanvasElement>()
 
   constructor(props : Props) {
     super(props);
-    this.state = {
-      dims: {height: 0, width: 0},
-    }
     this.paint = this.paint.bind(this);
-  }
-
-  updateDimensions() {
-    this.setState({
-      dims: {width: window.innerWidth, height: window.innerHeight}
-    })
-  }
-
-  componentDidMount() {
-    this.updateDimensions();
-    window.addEventListener("resize", this.updateDimensions.bind(this));
   }
 
   componentDidUpdate() {
@@ -48,13 +32,15 @@ class CanvasOverlay extends Component<Props, State> {
     if(this.canvas.current) {
       const context = this.canvas.current.getContext("2d");
       if(context) {
-        const hostCoords = CoordsConversion.projectFill(this.props.hostCoords, this.state.dims);
-        const ballCoords = CoordsConversion.projectFill(this.props.ballCoords, this.state.dims);
-        context.clearRect(0, 0, this.state.dims.width, this.state.dims.height);
+        const hostCoords = CoordsConversion.projectFill(this.props.hostCoords, this.props.dims);
+        const ballCoords = CoordsConversion.projectFill(this.props.ballCoords, this.props.dims);
+        const paddleDims = CoordsConversion.projectFillDims(PADDLE_DIMS, this.props.dims);
+        const ballRadiusDims = CoordsConversion.projectFillDims({height: BALL_RADIUS, width: BALL_RADIUS}, this.props.dims);
+        context.clearRect(0, 0, this.props.dims.width, this.props.dims.height);
         context.fillStyle = "#ffffff";
-        context.fillRect(hostCoords.x, hostCoords.y, 30, 30);
+        context.fillRect(hostCoords.x, hostCoords.y, paddleDims.width, paddleDims.height);
         context.beginPath();
-        context.arc(ballCoords.x, ballCoords.y, 30, 0, Math.PI*2);
+        context.arc(ballCoords.x, ballCoords.y, ballRadiusDims.width, 0, Math.PI*2);
         context.fill();
         context.save();
       }
@@ -63,7 +49,7 @@ class CanvasOverlay extends Component<Props, State> {
 
   render() {
     return (
-      <canvas ref={this.canvas} className="canvas-outer" width={this.state.dims.width} height={this.state.dims.height}></canvas>
+      <canvas ref={this.canvas} className="canvas-outer" width={this.props.dims.width} height={this.props.dims.height}></canvas>
     )
   }
 }
